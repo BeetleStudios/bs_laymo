@@ -1,0 +1,66 @@
+.phone-frame {
+    position: absolute;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    border-radius: 50px;
+    background-color: black;
+    box-shadow: 0 0 0.1em 0.25em #050506, 0 0 0 0.4em hsl(254, 30%, 85%);
+    overflow: hidden;
+}
+
+.phone-content {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 50px;
+}
+
+.phone-notch {
+    position: absolute;
+    top: 0.6rem;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 2rem;
+    width: 35%;
+    background-color: black;
+    border-radius: 25px;
+    z-index: 999;
+}
+
+.phone-indicator {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0.4rem;
+    margin: auto;
+    width: 8rem;
+    height: 0.25rem;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.25rem;
+    background: transparent;
+    backdrop-filter: grayscale(1) invert(1) contrast(100);
+}
+
+.phone-time {
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 0.9rem 2rem;
+    z-index: 9;
+    pointer-events: none;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: white;
+    font-family: 'Inter', -apple-system, sans-serif;
+}
+
+.phone-time[data-theme='light'] {
+    color: black;
+}

@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 667">
+  <rect width="375" height="667" fill="#f8f9fa"/>
+  
+  <!-- Header -->
+  <rect x="150" y="75" width="75" height="45" rx="10" fill="#1a1a1a"/>
+  <text x="187.5" y="108" font-family="Arial" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">Laymo</text>
+  <text x="187.5" y="145" font-family="Arial" font-size="12" fill="#6c757d" text-anchor="middle">Your autonomous ride awaits</text>
+  
+  <!-- Location Card -->
+  <rect x="20" y="180" width="335" height="120" rx="16" fill="#fff" stroke="#dee2e6" stroke-width="1"/>
+  <circle cx="50" cy="220" r="6" fill="#28a745"/>
+  <text x="70" y="210" font-family="Arial" font-size="10" fill="#6c757d">PICKUP</text>
+  <text x="70" y="228" font-family="Arial" font-size="14" fill="#212529">Current Location</text>
+  
+  <line x1="70" y1="245" x2="330" y2="245" stroke="#dee2e6" stroke-width="1"/>
+  
+  <rect x="40" y="260" width="20" height="20" rx="4" fill="#000"/>
+  <text x="70" y="266" font-family="Arial" font-size="10" fill="#6c757d">DESTINATION</text>
+  <text x="70" y="284" font-family="Arial" font-size="14" fill="#212529">Where to?</text>
+  
+  <!-- Quick Destinations -->
+  <text x="24" y="340" font-family="Arial" font-size="12" font-weight="600" fill="#6c757d">Quick Destinations</text>
+  
+  <rect x="20" y="355" width="160" height="70" rx="14" fill="#fff" stroke="#dee2e6" stroke-width="1"/>
+  <text x="100" y="400" font-family="Arial" font-size="12" fill="#212529" text-anchor="middle">LS Airport</text>
+  
+  <rect x="195" y="355" width="160" height="70" rx="14" fill="#fff" stroke="#dee2e6" stroke-width="1"/>
+  <text x="275" y="400" font-family="Arial" font-size="12" fill="#212529" text-anchor="middle">Pillbox Hospital</text>
+  
+  <rect x="20" y="435" width="160" height="70" rx="14" fill="#fff" stroke="#dee2e6" stroke-width="1"/>
+  <text x="100" y="480" font-family="Arial" font-size="12" fill="#212529" text-anchor="middle">Vespucci Beach</text>
+  
+  <rect x="195" y="435" width="160" height="70" rx="14" fill="#fff" stroke="#dee2e6" stroke-width="1"/>
+  <text x="275" y="480" font-family="Arial" font-size="12" fill="#212529" text-anchor="middle">Diamond Casino</text>
+  
+  <!-- Waypoint Button -->
+  <rect x="20" y="540" width="335" height="56" rx="14" fill="#1a1a1a"/>
+  <text x="187.5" y="575" font-family="Arial" font-size="15" font-weight="600" fill="#fff" text-anchor="middle">Use Map Waypoint</text>
+</svg>
