@@ -1,5 +1,3 @@
-local QBX = exports.qbx_core
-local PlayerData = {}
 local currentRide = nil
 local rideVehicle = nil
 local rideDriver = nil
@@ -58,22 +56,6 @@ AddEventHandler("onResourceStart", function(resource)
             icon = "https://cfx-nui-" .. GetCurrentResourceName() .. "/ui/dist/icon.png",
             fixBlur = true
         })
-    end
-end)
-
--- Player data management
-RegisterNetEvent("QBCore:Client:OnPlayerLoaded", function()
-    PlayerData = QBX:GetPlayerData()
-end)
-
-RegisterNetEvent("QBCore:Client:OnPlayerUnload", function()
-    PlayerData = {}
-    CancelRide()
-end)
-
-AddEventHandler("onResourceStart", function(resource)
-    if resource == GetCurrentResourceName() then
-        PlayerData = QBX:GetPlayerData() or {}
     end
 end)
 
