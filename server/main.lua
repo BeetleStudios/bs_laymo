@@ -1,5 +1,21 @@
 local QBX = exports.qbx_core
 
+local function GiveRideKeysToPlayer(targetSrc, vehicle)
+    if not targetSrc or not vehicle or not DoesEntityExist(vehicle) then
+        return
+    end
+
+    if GetResourceState("qbx_vehiclekeys") == "started" then
+        pcall(function()
+            exports.qbx_vehiclekeys:GiveKeys(targetSrc, vehicle, true)
+        end)
+    elseif GetResourceState("qb-vehiclekeys") == "started" then
+        pcall(function()
+            exports["qb-vehiclekeys"]:GiveKeys(targetSrc, vehicle, true)
+        end)
+    end
+end
+
 -- Check player balance
 RegisterNetEvent("laymo:checkBalance", function(requestId, amount)
     local src = source
@@ -23,14 +39,40 @@ RegisterNetEvent("laymo:giveRideKeys", function(vehicleNetId)
     if not vehicleNetId then return end
     local vehicle = NetworkGetEntityFromNetworkId(vehicleNetId)
     if not vehicle or not DoesEntityExist(vehicle) then return end
-    if GetResourceState("qbx_vehiclekeys") == "started" then
-        pcall(function()
-            exports.qbx_vehiclekeys:GiveKeys(src, vehicle, true)
-        end)
-    elseif GetResourceState("qb-vehiclekeys") == "started" then
-        pcall(function()
-            exports["qb-vehiclekeys"]:GiveKeys(src, vehicle, true)
-        end)
+    GiveRideKeysToPlayer(src, vehicle)
+end)
+
+-- Give temporary ride keys to players near the Laymo vehicle so party members can board.
+RegisterNetEvent("laymo:giveRideKeysNearby", function(vehicleNetId, radius)
+    local src = source
+    if not vehicleNetId then return end
+    local vehicle = NetworkGetEntityFromNetworkId(vehicleNetId)
+    if not vehicle or not DoesEntityExist(vehicle) then return end
+
+    local requesterPed = GetPlayerPed(src)
+    if requesterPed == 0 then return end
+
+    local rideCoords = GetEntityCoords(vehicle)
+    local requesterCoords = GetEntityCoords(requesterPed)
+    local maxRadius = math.min(math.max(tonumber(radius) or 12.0, 5.0), 25.0)
+
+    -- Anti-abuse: requester must also be near the ride vehicle.
+    if #(requesterCoords - rideCoords) > (maxRadius + 5.0) then
+        return
+    end
+
+    for _, id in ipairs(GetPlayers()) do
+        local playerId = tonumber(id)
+        if playerId then
+            local ped = GetPlayerPed(playerId)
+            if ped ~= 0 then
+                local pedCoords = GetEntityCoords(ped)
+                if #(pedCoords - rideCoords) <= maxRadius then
+                    GiveRideKeysToPlayer(playerId, vehicle)
+                    TriggerClientEvent("laymo:partyBoardingPrompt", playerId, vehicleNetId, src, maxRadius)
+                end
+            end
+        end
     end
 end)
 
@@ -104,9 +146,17 @@ RegisterCommand("laymo:surge", function(source, args, rawCommand)
     if source ~= 0 then
         local player = QBX:GetPlayer(source)
         if not player then return end
-        
-        -- Check for admin permission (adjust to your permission system)
-        if not QBX:HasPermission(source, "admin") then
+
+        -- Prefer qbx permission check, fall back to ACE for stricter compatibility.
+        local hasAdminPerm = false
+        if QBX.HasPermission then
+            hasAdminPerm = QBX:HasPermission(source, "admin")
+        end
+        if not hasAdminPerm then
+            hasAdminPerm = IsPlayerAceAllowed(source, "command.laymo.surge")
+        end
+
+        if not hasAdminPerm then
             return
         end
     end

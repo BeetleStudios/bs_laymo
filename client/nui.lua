@@ -56,7 +56,7 @@ RegisterNUICallback("requestRide", function(data, cb)
     local inAHurry = data.inAHurry == true
     local partySize = tonumber(data.partySize)
     if partySize == nil or partySize < 0 then partySize = 0 end
-    partySize = math.min(partySize, Config.MaxPartySize or 3)
+    partySize = math.min(partySize, Config.MaxPartySize or 2)
 
     if not pickup or not destination then
         cb({ success = false, error = "Missing pickup or destination" })
@@ -202,7 +202,7 @@ end)
 -- Get app config (e.g. max party size for UI)
 RegisterNUICallback("getLaymoConfig", function(data, cb)
     cb({
-        maxPartySize = Config.MaxPartySize or 3
+        maxPartySize = Config.MaxPartySize or 2
     })
 end)
 

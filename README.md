@@ -20,6 +20,17 @@ By Seamus McMasters - Beetle Studios
 - [ox_lib](https://github.com/overextended/ox_lib)
 - [oxmysql](https://github.com/overextended/oxmysql) (optional, for ride history)
 
+## Qbox convars / compatibility
+
+This resource now runs without relying on QB-Core bridge client events, so it is compatible with native Qbox setups.
+
+- If your server still needs bridge compatibility for other resources, keep:
+  - `setr qbx:enableBridge "true"`
+- If you run pure Qbox resources, bridge can be off:
+  - `setr qbx:enableBridge "false"`
+
+Convar reference: Qbox docs - Convars.
+
 ## Installation (for server owners — no Node.js required)
 
 If you received a **pre-built release** (zip from the developer):
