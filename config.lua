@@ -1,5 +1,8 @@
 Config = {}
 
+-- Locale (examples: EN, IT)
+Config.Locale = "EN"
+
 -- App Settings
 Config.AppIdentifier = "laymo"
 Config.AppName = "Laymo"

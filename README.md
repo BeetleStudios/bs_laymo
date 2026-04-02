@@ -67,6 +67,21 @@ Edit `config.lua` to customize:
 - Driver models
 - Autopilot behavior
 - Maximum wait times
+- Language/locale (`Config.Locale`)
+
+### Locale / language
+Set your language in `config.lua`:
+```lua
+Config.Locale = "EN"
+```
+
+Available locale codes:
+- `EN` (English)
+- `IT` (Italiano)
+- `ES` (Espanol)
+- `FR` (Francais)
+- `DE` (Deutsch)
+- `PT` (Portugues)
 
 ## Configuration Options
 

@@ -70,14 +70,14 @@ end)
 local function Notify(message, type)
     if Config.UseOxLib then
         lib.notify({
-            title = "Laymo",
+            title = L("app.name"),
             description = message,
             type = type or "info"
         })
     else
         exports["lb-phone"]:SendNotification({
             app = Config.AppIdentifier,
-            title = "Laymo",
+            title = L("app.name"),
             content = message
         })
     end
@@ -130,7 +130,7 @@ local function CreateDriverBlip(entity)
         SetBlipScale(driverBlip, Config.DriverBlipScale)
         SetBlipAsShortRange(driverBlip, false)
         BeginTextCommandSetBlipName("STRING")
-        AddTextComponentString("Laymo Driver")
+        AddTextComponentString(L("app.driver_blip_name"))
         EndTextCommandSetBlipName(driverBlip)
     end
 end
@@ -223,7 +223,7 @@ end
 function CancelRide()
     if rideState ~= "idle" then
         CleanupRide()
-        Notify("Ride cancelled", "error")
+        Notify(L("lua.ride_cancelled"), "error")
         SendAppMessage({ type = "rideUpdate", state = "cancelled" })
     end
 end
@@ -238,7 +238,7 @@ function RequestPullOver()
     CreateThread(function()
         ClearPedTasks(rideDriver)
         TaskVehicleTempAction(rideDriver, rideVehicle, 1, 8000) -- Brake
-        Notify("Pulling over - you can get out when we've stopped", "info")
+        Notify(L("lua.pull_over_in_progress"), "info")
         SendAppMessage({ type = "rideUpdate", state = "pulling_over" })
 
         -- Wait for vehicle to stop (or max 5 seconds)
@@ -249,7 +249,7 @@ function RequestPullOver()
         end
         Wait(500)
 
-        Notify("You can get out now", "success")
+        Notify(L("lua.you_can_exit_now"), "success")
 
         -- Distance traveled (vehicle position where we stopped)
         local vehCoords = GetEntityCoords(rideVehicle)
@@ -266,15 +266,15 @@ function RequestPullOver()
 
         if partialPrice > 0 then
             TriggerServerEvent("laymo:chargePlayer", partialPrice)
-            Notify("Ride ended. Charged: $" .. partialPrice, "info")
+            Notify(L("lua.ride_ended_charged", partialPrice), "info")
         else
-            Notify("Ride ended", "info")
+            Notify(L("lua.ride_ended"), "info")
         end
 
         SendAppMessage({
             type = "rideUpdate",
             state = "cancelled",
-            message = "Ride ended early",
+            message = L("lua.ride_ended"),
             price = partialPrice
         })
         CleanupRide()
@@ -372,7 +372,7 @@ local function SpawnRideVehicle(vehicleData, pickupCoords, destinationCoords)
     -- Find spawn point
     local spawnPoint = FindSpawnPoint(playerCoords)
     if not spawnPoint then
-        Notify("Could not find a suitable pickup location", "error")
+        Notify(L("lua.no_pickup_location"), "error")
         return false
     end
     
@@ -469,7 +469,7 @@ CreateThread(function()
                             if dist <= prompt.radius then
                                 sleepMs = 0
                                 BeginTextCommandDisplayHelp("STRING")
-                                AddTextComponentString("Press ~INPUT_CONTEXT~ to enter Laymo")
+                                AddTextComponentString(L("lua.press_e_enter_laymo"))
                                 EndTextCommandDisplayHelp(0, false, false, -1)
 
                                 if IsControlJustPressed(0, 51) then
@@ -477,7 +477,7 @@ CreateThread(function()
                                     if seat then
                                         TaskWarpPedIntoVehicle(playerPed, vehicle, seat)
                                     else
-                                        Notify("Laymo is full", "error")
+                                        Notify(L("lua.laymo_full"), "error")
                                     end
                                 end
                             else
@@ -496,13 +496,13 @@ end)
 -- Request a ride
 function RequestRide(pickupCoords, destinationCoords, tier, inAHurry, partySize)
     if rideState ~= "idle" then
-        Notify("You already have an active ride", "error")
+        Notify(L("lua.already_active_ride"), "error")
         return
     end
 
     local playerPed = PlayerPedId()
     if IsPedInAnyVehicle(playerPed, false) then
-        Notify("Please exit your current vehicle first", "error")
+        Notify(L("lua.exit_current_vehicle"), "error")
         return
     end
 
@@ -521,8 +521,8 @@ function RequestRide(pickupCoords, destinationCoords, tier, inAHurry, partySize)
     -- Check if player can afford
     TriggerServerCallback("laymo:checkBalance", function(canAfford)
         if not canAfford then
-            Notify("Insufficient funds", "error")
-            SendAppMessage({ type = "rideUpdate", state = "error", message = "Insufficient funds" })
+            Notify(L("lua.insufficient_funds"), "error")
+            SendAppMessage({ type = "rideUpdate", state = "error", message = L("lua.insufficient_funds") })
             return
         end
         
@@ -559,14 +559,14 @@ function RequestRide(pickupCoords, destinationCoords, tier, inAHurry, partySize)
                 partySize = currentRide.partySize or 0
             })
             
-            Notify("Your Laymo is on the way!", "success")
+            Notify(L("lua.laymo_on_the_way"), "success")
             
             -- Start autopilot to pickup
             StartPickupAutopilot(pickupCoords, destinationCoords)
         else
             rideState = "idle"
             currentRide = nil
-            SendAppMessage({ type = "rideUpdate", state = "error", message = "Could not dispatch vehicle" })
+            SendAppMessage({ type = "rideUpdate", state = "error", message = L("lua.no_pickup_location") })
         end
     end, price)
 end
@@ -662,7 +662,7 @@ function StartPickupAutopilot(pickupCoords, destinationCoords)
                 SetVehicleDoorsLockedForPlayer(rideVehicle, PlayerId(), false)
                 SetVehicleDoorsLockedForAllPlayers(rideVehicle, false)
 
-                Notify("Your Laymo has arrived! Enter the vehicle.", "success")
+                Notify(L("lua.laymo_arrived_enter"), "success")
                 SendAppMessage({ type = "rideUpdate", state = "arrived" })
 
                 -- Wait for player to enter
@@ -673,7 +673,7 @@ function StartPickupAutopilot(pickupCoords, destinationCoords)
             -- Timeout check
             if (GetGameTimer() - waitStartTime) > (Config.MaxWaitTime * 1000) then
                 CancelRide()
-                Notify("Ride cancelled - vehicle took too long", "error")
+                Notify(L("lua.vehicle_took_too_long"), "error")
                 return
             end
         end
@@ -712,7 +712,7 @@ function WaitForPlayerEntry(destinationCoords)
                 requesterSeated = IsRequesterInFrontPassengerSeat(playerPed, rideVehicle)
                 if requesterSeated and not boardingStart then
                     boardingStart = GetGameTimer()
-                    Notify("Waiting for party members to board...", "info")
+                    Notify(L("lua.waiting_party_board"), "info")
                     SendAppMessage({
                         type = "rideUpdate",
                         state = "boarding",
@@ -731,18 +731,18 @@ function WaitForPlayerEntry(destinationCoords)
                 sleepMs = 0
                 BeginTextCommandDisplayHelp("STRING")
                 if requesterSeated and not promptedProceed then
-                    AddTextComponentString("Waiting for party to board")
+                    AddTextComponentString(L("lua.waiting_for_party"))
                 elseif promptedProceed then
-                    AddTextComponentString("Press ~INPUT_CONTEXT~ to depart now")
+                    AddTextComponentString(L("lua.press_e_depart_now"))
                 else
-                    AddTextComponentString("Press ~INPUT_CONTEXT~ to enter Laymo")
+                    AddTextComponentString(L("lua.press_e_enter_laymo"))
                 end
                 EndTextCommandDisplayHelp(0, false, false, -1)
 
                 if IsControlJustPressed(0, 51) then -- INPUT_CONTEXT (E)
                     if promptedProceed and requesterSeated then
                         rideState = "riding"
-                        Notify("Proceeding with current passengers", "info")
+                        Notify(L("lua.proceeding_current_passengers"), "info")
                         SendAppMessage({ type = "rideUpdate", state = "riding" })
                         StartDestinationAutopilot(destinationCoords)
                         return
@@ -770,7 +770,7 @@ function WaitForPlayerEntry(destinationCoords)
 
                 if boarded >= expectedPassengers then
                     rideState = "riding"
-                    Notify("Party boarded. Heading to your destination!", "success")
+                    Notify(L("lua.party_boarded_heading"), "success")
                     SendAppMessage({
                         type = "rideUpdate",
                         state = "riding",
@@ -794,7 +794,7 @@ function WaitForPlayerEntry(destinationCoords)
                 local waited = now - (boardingStart or now)
                 if waited >= boardingWaitMs and not promptedProceed then
                     promptedProceed = true
-                    Notify(("Only %d/%d boarded. Press E to depart, or wait for more."):format(boarded, expectedPassengers), "info")
+                    Notify(L("lua.only_boarded_prompt", boarded, expectedPassengers), "info")
                     SendAppMessage({
                         type = "rideUpdate",
                         state = "boarding_short",
@@ -805,7 +805,7 @@ function WaitForPlayerEntry(destinationCoords)
 
                 if promptedProceed and waited >= (boardingWaitMs + proceedAutoMs) then
                     rideState = "riding"
-                    Notify("Party count not met. Auto-departing now.", "info")
+                    Notify(L("lua.party_count_not_met_autostart"), "info")
                     SendAppMessage({
                         type = "rideUpdate",
                         state = "riding",
@@ -820,8 +820,8 @@ function WaitForPlayerEntry(destinationCoords)
             -- Timeout check
             if (GetGameTimer() - waitStart) > (Config.PickupTimeout * 1000) then
                 CancelRide()
-                Notify("Ride cancelled - you didn't enter the vehicle in time", "error")
-                SendAppMessage({ type = "rideUpdate", state = "cancelled", message = "Pickup timeout" })
+                Notify(L("lua.pickup_timeout"), "error")
+                SendAppMessage({ type = "rideUpdate", state = "cancelled", message = L("lua.pickup_timeout") })
                 return
             end
 
@@ -861,7 +861,7 @@ function StartDestinationAutopilot(destinationCoords)
 
             if not DoesEntityExist(rideVehicle) or not DoesEntityExist(rideDriver) then
                 -- Vehicle destroyed during ride
-                Notify("Ride ended unexpectedly", "error")
+                Notify(L("lua.ride_ended_unexpectedly"), "error")
                 rideState = "idle"
                 currentRide = nil
                 return
@@ -913,7 +913,7 @@ function StartDestinationAutopilot(destinationCoords)
 
                 TriggerServerEvent("laymo:chargePlayer", partialPrice)
 
-                Notify("Ride ended early. Charged: $" .. partialPrice, "info")
+                Notify(L("lua.ride_ended_early_charged", partialPrice), "info")
                 SendAppMessage({
                     type = "rideUpdate",
                     state = "completed",
@@ -939,7 +939,7 @@ function StartDestinationAutopilot(destinationCoords)
                 TriggerServerEvent("laymo:chargePlayer", currentRide.price)
                 
                 rideState = "completed"
-                Notify("You have arrived! Fare: $" .. currentRide.price, "success")
+                Notify(L("lua.arrived_fare", currentRide.price), "success")
                 SendAppMessage({ 
                     type = "rideUpdate", 
                     state = "completed",

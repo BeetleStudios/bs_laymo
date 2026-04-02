@@ -10,6 +10,73 @@ import Frame from './components/Frame';
 import './App.css';
 
 const devMode = !window.invokeNative;
+const defaultLocale = {
+    tagline: 'Your autonomous ride awaits',
+    pickup: 'Pickup',
+    tap_set_current_location: 'Tap to set current location',
+    destination: 'Destination',
+    where_to: 'Where to?',
+    quick_destinations: 'Quick Destinations',
+    use_map_waypoint: 'Use Map Waypoint',
+    select_destination: 'Select Destination',
+    waypoint_subtitle: 'Set a waypoint on your map',
+    popular_destinations: 'Popular Destinations',
+    confirm_ride: 'Confirm Ride',
+    select_ride_type: 'Select Ride Type',
+    party_size: 'Party size',
+    party_hint: 'How many others are with you? They can press E to enter when the ride arrives.',
+    party_just_me: 'Just me',
+    party_one_other: '1 other',
+    party_many_others: '%d others',
+    in_a_hurry: 'Are you in a hurry?',
+    hurry_hint: 'Driver will take a faster, more direct route if yes.',
+    hurry_no: 'No, take your time',
+    hurry_yes: "Yes, I'm in a hurry",
+    estimated_fare: 'Estimated fare',
+    vehicle: 'Vehicle',
+    trip_time: 'Trip time',
+    distance: 'Distance',
+    request_laymo: 'Request Laymo',
+    finding_ride: 'Finding your ride...',
+    dispatching_vehicle: 'Please wait while we dispatch a vehicle',
+    ride_on_the_way: 'Your ride is on the way!',
+    away: 'away',
+    ride_arrived: 'Your ride has arrived!',
+    press_e_to_enter: 'Press E to enter.',
+    party_press_e_to_enter: 'Your party can press E to enter as well.',
+    on_your_way: 'On your way!',
+    heading_to: 'Heading to %s',
+    progress_complete: '%d%% complete',
+    eta_remaining: '%s remaining',
+    pulling_over: 'Pulling over',
+    can_get_out_when_stopped: "You can get out when we've stopped",
+    cancel_ride: 'Cancel Ride',
+    end_ride_get_out: 'End ride / Get out',
+    end_ride_title: 'End ride?',
+    end_ride_description: "Driver will pull over so you can get out. You'll be charged for distance traveled.",
+    no: 'No',
+    yes_pull_over: 'Yes, pull over',
+    arrived_title: "You've arrived!",
+    thanks_riding: 'Thanks for riding with Laymo',
+    trip_receipt: 'Trip Receipt',
+    base_fare: 'Base fare',
+    total: 'Total',
+    rate_your_ride: 'Rate your ride',
+    rating_thanks: 'Thanks for your feedback!',
+    done: 'Done',
+    no_waypoint_title: 'No Waypoint',
+    no_waypoint_description: 'Please set a waypoint on your map first',
+    ok: 'OK',
+    error_title: 'Error',
+    request_failed: 'Could not request ride',
+    cancel_ride_title: 'Cancel Ride?',
+    cancel_ride_description: 'Are you sure you want to cancel this ride?',
+    yes_cancel: 'Yes, Cancel',
+    current_location: 'Current Location',
+    map_waypoint: 'Map Waypoint',
+    eta_unknown: '--',
+    eta_minutes: '%d min'
+};
 
 // Fetch NUI helper
 const fetchNui = async (action, data = {}) => {
@@ -52,6 +119,7 @@ const App = () => {
     const [theme, setTheme] = useState('dark');
     const [screen, setScreen] = useState('home'); // home, selectDestination, confirmRide, riding, completed
     const [loading, setLoading] = useState(false);
+    const [locale, setLocale] = useState(defaultLocale);
     
     // Location states
     const [pickup, setPickup] = useState(null);
@@ -76,6 +144,12 @@ const App = () => {
     const [rating, setRating] = useState(0);
 
     const { getSettings, onSettingsChange, setPopUp, sendNotification } = window;
+    const t = useCallback((key, ...args) => {
+        const template = locale?.[key] ?? defaultLocale[key] ?? key;
+        if (args.length === 0) return template;
+        let i = 0;
+        return template.replace(/%[sd]/g, () => String(args[i++] ?? ''));
+    }, [locale]);
 
     // Ensure the app is visible (fixes black screen when reopening app after switching away)
     const ensureVisible = useCallback(() => {
@@ -123,12 +197,13 @@ const App = () => {
             fetchNui('getVehicleTiers'),
             fetchNui('getPopularDestinations'),
             fetchNui('getRideStatus'),
-            fetchNui('getLaymoConfig').catch(() => ({ maxPartySize: 3 }))
+            fetchNui('getLaymoConfig').catch(() => ({ maxPartySize: 2, locale: defaultLocale }))
         ]);
 
         setTiers(tiersData || []);
         setPopularDestinations(destinationsData || []);
         if (configData?.maxPartySize != null) setMaxPartySize(configData.maxPartySize);
+        if (configData?.locale) setLocale({ ...defaultLocale, ...configData.locale });
 
         if (statusData?.state && statusData.state !== 'idle') {
             setRideState(statusData.state);
@@ -182,7 +257,7 @@ const App = () => {
         setLoading(true);
         const location = await fetchNui('getPlayerLocation');
         setPickup(location);
-        setPickupStreet(location.street || 'Current Location');
+        setPickupStreet(location.street || t('current_location'));
         setLoading(false);
     };
 
@@ -192,14 +267,14 @@ const App = () => {
         const waypoint = await fetchNui('getWaypoint');
         if (waypoint.exists) {
             setDestination(waypoint);
-            setDestinationStreet(waypoint.street || 'Map Waypoint');
+            setDestinationStreet(waypoint.street || t('map_waypoint'));
             await updatePriceEstimate(pickup, waypoint, selectedTier);
         } else {
             if (!devMode) {
                 setPopUp?.({
-                    title: 'No Waypoint',
-                    description: 'Please set a waypoint on your map first',
-                    buttons: [{ title: 'OK' }]
+                    title: t('no_waypoint_title'),
+                    description: t('no_waypoint_description'),
+                    buttons: [{ title: t('ok') }]
                 });
             }
         }
@@ -249,9 +324,9 @@ const App = () => {
         } else {
             if (!devMode) {
                 setPopUp?.({
-                    title: 'Error',
-                    description: result.error || 'Could not request ride',
-                    buttons: [{ title: 'OK', color: 'red' }]
+                    title: t('error_title'),
+                    description: result.error || t('request_failed'),
+                    buttons: [{ title: t('ok'), color: 'red' }]
                 });
             }
         }
@@ -262,12 +337,12 @@ const App = () => {
     const cancelRide = async () => {
         if (!devMode) {
             setPopUp?.({
-                title: 'Cancel Ride?',
-                description: 'Are you sure you want to cancel this ride?',
+                title: t('cancel_ride_title'),
+                description: t('cancel_ride_description'),
                 buttons: [
-                    { title: 'No', color: 'blue' },
+                    { title: t('no'), color: 'blue' },
                     { 
-                        title: 'Yes, Cancel', 
+                        title: t('yes_cancel'),
                         color: 'red',
                         cb: async () => {
                             await fetchNui('cancelRide');
@@ -326,9 +401,9 @@ const App = () => {
 
     // Format time
     const formatEta = (seconds) => {
-        if (!seconds) return '--';
+        if (!seconds) return t('eta_unknown');
         if (seconds < 60) return `${seconds}s`;
-        return `${Math.ceil(seconds / 60)} min`;
+        return t('eta_minutes', Math.ceil(seconds / 60));
     };
 
     // Render screens
@@ -345,7 +420,7 @@ const App = () => {
                         onError={() => setHeaderLogoError(true)}
                     />
                 )}
-                <p className="tagline">Your autonomous ride awaits</p>
+                <p className="tagline">{t('tagline')}</p>
             </div>
 
             <div className="location-card">
@@ -354,8 +429,8 @@ const App = () => {
                         <div className="dot" />
                     </div>
                     <div className="location-info">
-                        <span className="label">Pickup</span>
-                        <span className="value">{pickupStreet || 'Tap to set current location'}</span>
+                        <span className="label">{t('pickup')}</span>
+                        <span className="value">{pickupStreet || t('tap_set_current_location')}</span>
                     </div>
                     {loading ? <Loader2 className="spinner" size={20} /> : <Navigation size={20} />}
                 </div>
@@ -373,15 +448,15 @@ const App = () => {
                         <MapPin size={16} />
                     </div>
                     <div className="location-info">
-                        <span className="label">Destination</span>
-                        <span className="value">{destinationStreet || 'Where to?'}</span>
+                        <span className="label">{t('destination')}</span>
+                        <span className="value">{destinationStreet || t('where_to')}</span>
                     </div>
                     <ChevronRight size={20} />
                 </div>
             </div>
 
             <div className="section">
-                <h3>Quick Destinations</h3>
+                <h3>{t('quick_destinations')}</h3>
                 <div className="destinations-grid">
                     {popularDestinations.slice(0, 4).map((dest) => (
                         <button 
@@ -408,7 +483,7 @@ const App = () => {
                 }}
             >
                 <MapPin size={20} />
-                <span>Use Map Waypoint</span>
+                <span>{t('use_map_waypoint')}</span>
             </button>
         </div>
     );
@@ -419,7 +494,7 @@ const App = () => {
                 <button className="back-btn" onClick={() => setScreen('home')}>
                     <X size={24} />
                 </button>
-                <h2>Select Destination</h2>
+                <h2>{t('select_destination')}</h2>
             </div>
 
             <button 
@@ -431,14 +506,14 @@ const App = () => {
             >
                 <Navigation size={24} />
                 <div className="option-text">
-                    <span className="option-title">Use Map Waypoint</span>
-                    <span className="option-subtitle">Set a waypoint on your map</span>
+                    <span className="option-title">{t('use_map_waypoint')}</span>
+                    <span className="option-subtitle">{t('waypoint_subtitle')}</span>
                 </div>
                 <ChevronRight size={20} />
             </button>
 
             <div className="section">
-                <h3>Popular Destinations</h3>
+                <h3>{t('popular_destinations')}</h3>
                 <div className="destinations-list">
                     {popularDestinations.map((dest) => (
                         <button 
@@ -464,14 +539,14 @@ const App = () => {
                 <button className="back-btn" onClick={() => setScreen('home')}>
                     <X size={24} />
                 </button>
-                <h2>Confirm Ride</h2>
+                <h2>{t('confirm_ride')}</h2>
             </div>
 
             <div className="route-summary">
                 <div className="route-point">
                     <div className="point-icon pickup-dot" />
                     <div className="point-info">
-                        <span className="point-label">Pickup</span>
+                        <span className="point-label">{t('pickup')}</span>
                         <span className="point-name">{pickupStreet}</span>
                     </div>
                 </div>
@@ -481,14 +556,14 @@ const App = () => {
                         <MapPin size={14} />
                     </div>
                     <div className="point-info">
-                        <span className="point-label">Destination</span>
+                        <span className="point-label">{t('destination')}</span>
                         <span className="point-name">{destinationStreet}</span>
                     </div>
                 </div>
             </div>
 
             <div className="tier-selector">
-                <h3>Select Ride Type</h3>
+                <h3>{t('select_ride_type')}</h3>
                 <div className="tiers">
                     {tiers.map((tier) => (
                         <button
@@ -509,8 +584,8 @@ const App = () => {
             </div>
 
             <div className="party-selector">
-                <h3>Party size</h3>
-                <p className="party-hint">How many others are with you? They can press E to enter when the ride arrives.</p>
+                <h3>{t('party_size')}</h3>
+                <p className="party-hint">{t('party_hint')}</p>
                 <div className="party-options">
                     {Array.from({ length: maxPartySize + 1 }, (_, n) => (
                         <button
@@ -519,15 +594,15 @@ const App = () => {
                             className={`party-option ${partySize === n ? 'selected' : ''}`}
                             onClick={() => setPartySize(n)}
                         >
-                            {n === 0 ? 'Just me' : n === 1 ? '1 other' : `${n} others`}
+                            {n === 0 ? t('party_just_me') : n === 1 ? t('party_one_other') : t('party_many_others', n)}
                         </button>
                     ))}
                 </div>
             </div>
 
             <div className="hurry-selector">
-                <h3>Are you in a hurry?</h3>
-                <p className="hurry-hint">Driver will take a faster, more direct route if yes.</p>
+                <h3>{t('in_a_hurry')}</h3>
+                <p className="hurry-hint">{t('hurry_hint')}</p>
                 <div className="hurry-options">
                     <button
                         type="button"
@@ -535,7 +610,7 @@ const App = () => {
                         onClick={() => setInAHurry(false)}
                     >
                         <Clock size={22} />
-                        <span>No, take your time</span>
+                        <span>{t('hurry_no')}</span>
                     </button>
                     <button
                         type="button"
@@ -543,7 +618,7 @@ const App = () => {
                         onClick={() => setInAHurry(true)}
                     >
                         <Zap size={22} />
-                        <span>Yes, I&apos;m in a hurry</span>
+                        <span>{t('hurry_yes')}</span>
                     </button>
                 </div>
             </div>
@@ -554,17 +629,17 @@ const App = () => {
                         <div className="estimate-item">
                             <DollarSign size={18} />
                             <span className="estimate-value">${priceEstimate.price}</span>
-                            <span className="estimate-label">Estimated fare</span>
+                            <span className="estimate-label">{t('estimated_fare')}</span>
                         </div>
                         <div className="estimate-item">
                             <Clock size={18} />
                             <span className="estimate-value">{formatEta(priceEstimate.eta)}</span>
-                            <span className="estimate-label">Trip time</span>
+                            <span className="estimate-label">{t('trip_time')}</span>
                         </div>
                         <div className="estimate-item">
                             <MapPin size={18} />
                             <span className="estimate-value">{priceEstimate.distanceMiles} mi</span>
-                            <span className="estimate-label">Distance</span>
+                            <span className="estimate-label">{t('distance')}</span>
                         </div>
                     </div>
                 </div>
@@ -579,7 +654,7 @@ const App = () => {
                     <Loader2 className="spinner" size={20} />
                 ) : (
                     <>
-                        <span>Request Laymo</span>
+                        <span>{t('request_laymo')}</span>
                         {priceEstimate && <span className="btn-price">${priceEstimate.price}</span>}
                     </>
                 )}
@@ -593,19 +668,19 @@ const App = () => {
                 {rideState === 'waiting' && (
                     <>
                         <Loader2 className="status-icon spinner" size={48} />
-                        <h2>Finding your ride...</h2>
-                        <p>Please wait while we dispatch a vehicle</p>
+                        <h2>{t('finding_ride')}</h2>
+                        <p>{t('dispatching_vehicle')}</p>
                     </>
                 )}
                 
                 {rideState === 'arriving' && (
                     <>
                         <Car className="status-icon arriving" size={48} />
-                        <h2>Your ride is on the way!</h2>
+                        <h2>{t('ride_on_the_way')}</h2>
                         <p>{rideInfo?.vehicle}</p>
                         <div className="eta-display">
                             <Clock size={20} />
-                            <span>{formatEta(eta)} away</span>
+                            <span>{formatEta(eta)} {t('away')}</span>
                         </div>
                     </>
                 )}
@@ -613,8 +688,8 @@ const App = () => {
                 {rideState === 'pickup' && (
                     <>
                         <Check className="status-icon arrived" size={48} />
-                        <h2>Your ride has arrived!</h2>
-                        <p>Press E to enter. {rideInfo?.partySize > 0 && 'Your party can press E to enter as well.'}</p>
+                        <h2>{t('ride_arrived')}</h2>
+                        <p>{t('press_e_to_enter')} {rideInfo?.partySize > 0 && t('party_press_e_to_enter')}</p>
                         <div className="driver-info">
                             <span className="driver-name">{rideInfo?.driverName}</span>
                             <span className="vehicle-name">{rideInfo?.vehicle}</span>
@@ -625,8 +700,8 @@ const App = () => {
                 {rideState === 'riding' && (
                     <>
                         <Navigation className="status-icon riding" size={48} />
-                        <h2>On your way!</h2>
-                        <p>Heading to {destinationStreet}</p>
+                        <h2>{t('on_your_way')}</h2>
+                        <p>{t('heading_to', destinationStreet)}</p>
                         
                         <div className="trip-progress">
                             <div className="progress-bar">
@@ -636,8 +711,8 @@ const App = () => {
                                 />
                             </div>
                             <div className="progress-info">
-                                <span>{tripProgress}% complete</span>
-                                {eta && <span>{formatEta(eta)} remaining</span>}
+                                <span>{t('progress_complete', tripProgress)}</span>
+                                {eta && <span>{t('eta_remaining', formatEta(eta))}</span>}
                             </div>
                         </div>
                     </>
@@ -646,8 +721,8 @@ const App = () => {
                 {rideState === 'pulling_over' && (
                     <>
                         <Car className="status-icon" size={48} />
-                        <h2>Pulling over</h2>
-                        <p>You can get out when we&apos;ve stopped</p>
+                        <h2>{t('pulling_over')}</h2>
+                        <p>{t('can_get_out_when_stopped')}</p>
                     </>
                 )}
             </div>
@@ -655,11 +730,11 @@ const App = () => {
             {rideInfo && (
                 <div className="ride-details">
                     <div className="detail-row">
-                        <span className="detail-label">Estimated fare</span>
+                        <span className="detail-label">{t('estimated_fare')}</span>
                         <span className="detail-value">${rideInfo.price}</span>
                     </div>
                     <div className="detail-row">
-                        <span className="detail-label">Vehicle</span>
+                        <span className="detail-label">{t('vehicle')}</span>
                         <span className="detail-value">{rideInfo.vehicle}</span>
                     </div>
                 </div>
@@ -668,7 +743,7 @@ const App = () => {
             {(rideState === 'waiting' || rideState === 'arriving' || rideState === 'pickup') && (
                 <button className="cancel-btn" onClick={cancelRide}>
                     <X size={20} />
-                    <span>Cancel Ride</span>
+                    <span>{t('cancel_ride')}</span>
                 </button>
             )}
 
@@ -678,11 +753,11 @@ const App = () => {
                     onClick={() => {
                         if (!devMode && window.setPopUp) {
                             window.setPopUp({
-                                title: 'End ride?',
-                                description: 'Driver will pull over so you can get out. You\'ll be charged for distance traveled.',
+                                title: t('end_ride_title'),
+                                description: t('end_ride_description'),
                                 buttons: [
-                                    { title: 'No', color: 'blue' },
-                                    { title: 'Yes, pull over', color: 'red', cb: () => fetchNui('endRide') }
+                                    { title: t('no'), color: 'blue' },
+                                    { title: t('yes_pull_over'), color: 'red', cb: () => fetchNui('endRide') }
                                 ]
                             });
                         } else {
@@ -691,7 +766,7 @@ const App = () => {
                     }}
                 >
                     <X size={20} />
-                    <span>End ride / Get out</span>
+                    <span>{t('end_ride_get_out')}</span>
                 </button>
             )}
         </div>
@@ -703,29 +778,29 @@ const App = () => {
                 <div className="completed-icon">
                     <Check size={48} />
                 </div>
-                <h2>You've arrived!</h2>
-                <p>Thanks for riding with Laymo</p>
+                <h2>{t('arrived_title')}</h2>
+                <p>{t('thanks_riding')}</p>
 
                 <div className="receipt-card">
                     <div className="receipt-header">
-                        <span>Trip Receipt</span>
+                        <span>{t('trip_receipt')}</span>
                     </div>
                     <div className="receipt-row">
-                        <span>Base fare</span>
+                        <span>{t('base_fare')}</span>
                         <span>$50.00</span>
                     </div>
                     <div className="receipt-row">
-                        <span>Distance</span>
+                        <span>{t('distance')}</span>
                         <span>{priceEstimate?.distanceMiles || '0'} mi</span>
                     </div>
                     <div className="receipt-row total">
-                        <span>Total</span>
+                        <span>{t('total')}</span>
                         <span>${rideInfo?.finalPrice || rideInfo?.price || 0}</span>
                     </div>
                 </div>
 
                 <div className="rating-section">
-                    <p>Rate your ride</p>
+                    <p>{t('rate_your_ride')}</p>
                     <div className="stars">
                         {[1, 2, 3, 4, 5].map((value) => (
                             <button
@@ -744,11 +819,11 @@ const App = () => {
                             </button>
                         ))}
                     </div>
-                    {rating > 0 && <p className="rating-thanks">Thanks for your feedback!</p>}
+                    {rating > 0 && <p className="rating-thanks">{t('rating_thanks')}</p>}
                 </div>
 
                 <button className="done-btn" onClick={startNewRide}>
-                    Done
+                    {t('done')}
                 </button>
             </div>
         </div>

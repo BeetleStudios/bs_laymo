@@ -59,13 +59,13 @@ RegisterNUICallback("requestRide", function(data, cb)
     partySize = math.min(partySize, Config.MaxPartySize or 2)
 
     if not pickup or not destination then
-        cb({ success = false, error = "Missing pickup or destination" })
+        cb({ success = false, error = L("nui.missing_pickup_or_destination") })
         return
     end
 
     -- Validate coordinates
     if not pickup.x or not pickup.y or not destination.x or not destination.y then
-        cb({ success = false, error = "Invalid coordinates" })
+        cb({ success = false, error = L("nui.invalid_coordinates") })
         return
     end
 
@@ -140,7 +140,7 @@ RegisterNUICallback("getPriceEstimate", function(data, cb)
     local tier = data.tier or "standard"
     
     if not pickup or not destination then
-        cb({ error = "Missing coordinates" })
+        cb({ error = L("nui.missing_coordinates") })
         return
     end
     
@@ -202,7 +202,9 @@ end)
 -- Get app config (e.g. max party size for UI)
 RegisterNUICallback("getLaymoConfig", function(data, cb)
     cb({
-        maxPartySize = Config.MaxPartySize or 2
+        maxPartySize = Config.MaxPartySize or 2,
+        localeCode = LangCode or (Config.Locale or "EN"),
+        locale = (Lang and Lang.ui) or {}
     })
 end)
 
