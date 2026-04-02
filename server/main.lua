@@ -16,6 +16,40 @@ RegisterNetEvent("laymo:giveRideKeys", function(vehicleNetId)
     GiveVehicleKeys(src, vehicle)
 end)
 
+-- Give temporary ride keys to players near the Laymo vehicle so party members can board.
+RegisterNetEvent("laymo:giveRideKeysNearby", function(vehicleNetId, radius)
+    local src = source
+    if not vehicleNetId then return end
+    local vehicle = NetworkGetEntityFromNetworkId(vehicleNetId)
+    if not vehicle or not DoesEntityExist(vehicle) then return end
+
+    local requesterPed = GetPlayerPed(src)
+    if requesterPed == 0 then return end
+
+    local rideCoords = GetEntityCoords(vehicle)
+    local requesterCoords = GetEntityCoords(requesterPed)
+    local maxRadius = math.min(math.max(tonumber(radius) or 12.0, 5.0), 25.0)
+
+    -- Anti-abuse: requester must also be near the ride vehicle.
+    if #(requesterCoords - rideCoords) > (maxRadius + 5.0) then
+        return
+    end
+
+    for _, id in ipairs(GetPlayers()) do
+        local playerId = tonumber(id)
+        if playerId then
+            local ped = GetPlayerPed(playerId)
+            if ped ~= 0 then
+                local pedCoords = GetEntityCoords(ped)
+                if #(pedCoords - rideCoords) <= maxRadius then
+                    GiveVehicleKeys(playerId, vehicle)
+                    TriggerClientEvent("laymo:partyBoardingPrompt", playerId, vehicleNetId, src, maxRadius)
+                end
+            end
+        end
+    end
+end)
+
 -- Charge player for ride
 RegisterNetEvent("laymo:chargePlayer", function(amount)
     local src = source

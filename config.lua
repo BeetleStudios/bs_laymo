@@ -1,5 +1,8 @@
 Config = {}
 
+-- Locale (examples: EN, IT)
+Config.Locale = "EN"
+
 -- App Settings
 Config.AppIdentifier = "laymo"
 Config.AppName = "Laymo"
@@ -15,7 +18,8 @@ Config.SurgeMultiplier = 1.0 -- Surge pricing multiplier (1.0 = no surge)
 Config.MinimumFare = 25 -- Minimum fare
 
 -- Party: max number of additional passengers (besides the person who ordered). 0 = just you.
-Config.MaxPartySize = 3
+-- Total riders is capped to 3 (requester + 2 passengers).
+Config.MaxPartySize = 2
 
 -- Vehicle Options (spawn randomly from this list)
 -- seats = max passengers (excluding driver); vehicle must have seats >= 1 + party size (you + party)
@@ -87,6 +91,9 @@ Config.MinPickupDistance = 20.0 -- Minimum distance to spawn vehicle
 -- Waiting Settings
 Config.MaxWaitTime = 300 -- Maximum wait time in seconds (5 minutes)
 Config.PickupTimeout = 120 -- Time before ride is cancelled if player doesn't enter (2 minutes)
+Config.PartyBoardingWaitSeconds = 20 -- Wait this long for full party before offering to depart anyway
+Config.PartyProceedAutoStartSeconds = 10 -- After proceed prompt, auto-start trip after this delay
+Config.PartyEntryRadius = 12.0 -- Players within this radius of the ride can receive temporary keys to board
 
 -- Blip Settings
 Config.ShowDriverBlip = true
