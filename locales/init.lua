@@ -18,9 +18,14 @@ local function deepGet(tbl, key)
 end
 
 local function loadLocale(localeCode)
-    local resourcePath = GetResourcePath(GetCurrentResourceName())
-    local fileName = ("%s/locales/%s.lua"):format(resourcePath, localeCode)
-    local chunk, err = loadfile(fileName)
+    local resourceName = GetCurrentResourceName()
+    local relPath = ("locales/%s.lua"):format(localeCode)
+    local content = LoadResourceFile(resourceName, relPath)
+    if type(content) ~= "string" or content == "" then
+        return nil, ("missing or empty %s"):format(relPath)
+    end
+
+    local chunk, err = load(content, ("@@%s/%s"):format(resourceName, relPath))
     if not chunk then
         return nil, err
     end
@@ -43,6 +48,8 @@ end
 
 Lang = localeData
 LangCode = localeCode
+_G.Lang = Lang
+_G.LangCode = LangCode
 
 function L(key, ...)
     local raw = deepGet(Lang, key)
@@ -59,3 +66,5 @@ function L(key, ...)
 
     return raw
 end
+
+_G.L = L

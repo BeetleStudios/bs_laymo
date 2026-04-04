@@ -1,5 +1,8 @@
 Config = {}
 
+-- Framework: 'qbx' (Qbox / qbx_core), 'qb' (qb-core), 'esx' (ESX Legacy), 'ox' (ox_core)
+Config.Framework = 'qbx'
+
 -- Locale (examples: EN, IT)
 Config.Locale = "EN"
 

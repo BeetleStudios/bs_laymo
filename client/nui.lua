@@ -1,5 +1,9 @@
 -- NUI Callbacks for AutoRide phone app
 
+L = _G.L
+Lang = _G.Lang
+LangCode = _G.LangCode
+
 -- Get current player location
 RegisterNUICallback("getPlayerLocation", function(data, cb)
     local playerPed = PlayerPedId()

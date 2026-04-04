@@ -1,4 +1,52 @@
-local QBX = exports.qbx_core
+L = _G.L
+Lang = _G.Lang
+LangCode = _G.LangCode
+
+local function NormalizeClientFramework()
+    local fw = (Config and Config.Framework) or 'qbx'
+    if fw == 'ox_core' then
+        return 'ox'
+    end
+    if fw == 'qb' or fw == 'esx' or fw == 'ox' then
+        return fw
+    end
+    return 'qbx'
+end
+
+local function FrameworkClientWarm()
+    local fw = NormalizeClientFramework()
+    if fw == 'qb' then
+        local ok, QBCore = pcall(function()
+            return exports['qb-core']:GetCoreObject()
+        end)
+        if ok and QBCore and QBCore.Functions and QBCore.Functions.GetPlayerData then
+            pcall(function()
+                QBCore.Functions.GetPlayerData()
+            end)
+        end
+    elseif fw == 'qbx' then
+        pcall(function()
+            exports.qbx_core:GetPlayerData()
+        end)
+    elseif fw == 'esx' then
+        local ok, ESX = pcall(function()
+            return exports['es_extended']:getSharedObject()
+        end)
+        if ok and ESX and ESX.GetPlayerData then
+            pcall(function()
+                ESX.GetPlayerData()
+            end)
+        end
+    elseif fw == 'ox' then
+        pcall(function()
+            local e = exports.ox_core
+            if e and e.GetPlayer then
+                e:GetPlayer()
+            end
+        end)
+    end
+end
+
 local currentRide = nil
 local rideVehicle = nil
 local rideDriver = nil
@@ -61,8 +109,7 @@ end)
 
 AddEventHandler("onResourceStart", function(resource)
     if resource == GetCurrentResourceName() then
-        -- Keep warm path for qbx export availability; no bridge-only events required.
-        QBX:GetPlayerData()
+        FrameworkClientWarm()
     end
 end)
 
@@ -225,6 +272,28 @@ function CancelRide()
         CleanupRide()
         Notify(L("lua.ride_cancelled"), "error")
         SendAppMessage({ type = "rideUpdate", state = "cancelled" })
+    end
+end
+
+do
+    local fw = NormalizeClientFramework()
+    if fw == "qb" or fw == "qbx" then
+        RegisterNetEvent("QBCore:Client:OnPlayerUnload", function()
+            CancelRide()
+        end)
+    end
+    if fw == "esx" then
+        RegisterNetEvent("esx:onPlayerLogout", function()
+            CancelRide()
+        end)
+        RegisterNetEvent("esx:playerLogout", function()
+            CancelRide()
+        end)
+    end
+    if fw == "ox" then
+        AddEventHandler("ox:playerLogout", function()
+            CancelRide()
+        end)
     end
 end
 
