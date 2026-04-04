@@ -1,6 +1,6 @@
 # Laymo - Autonomous Ride Service for FiveM
 
-A Waymo/Uber-style autonomous ride service app for lb-phone, designed for QBX Core framework servers.
+A Waymo/Uber-style autonomous ride service app for lb-phone, designed for QBX/QB/ESX/OX framework servers.
 By Seamus McMasters - Beetle Studios
 
 ## Features
