@@ -98,6 +98,12 @@ Config.PartyBoardingWaitSeconds = 20 -- Wait this long for full party before off
 Config.PartyProceedAutoStartSeconds = 10 -- After proceed prompt, auto-start trip after this delay
 Config.PartyEntryRadius = 12.0 -- Players within this radius of the ride can receive temporary keys to board
 
+-- Fuel compatibility:
+-- Keep Laymo ride vehicles fueled so they work across different fuel scripts.
+Config.IgnoreFuelScripts = true
+Config.FuelOverrideLevel = 100.0 -- 0.0 to 100.0
+Config.FuelMaintainIntervalMs = 2000 -- How often fuel is re-applied while ride is active
+
 -- Blip Settings
 Config.ShowDriverBlip = true
 Config.DriverBlipSprite = 225 -- Taxi icon

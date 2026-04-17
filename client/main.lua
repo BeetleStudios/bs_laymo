@@ -267,6 +267,64 @@ local function GetFirstAvailablePartySeat(vehicle)
     return nil
 end
 
+local function ApplyFuelOverride(vehicle)
+    if not Config.IgnoreFuelScripts or not vehicle or not DoesEntityExist(vehicle) then
+        return
+    end
+
+    local fuelLevel = tonumber(Config.FuelOverrideLevel) or 100.0
+    fuelLevel = math.min(math.max(fuelLevel, 0.0), 100.0)
+
+    SetVehicleFuelLevel(vehicle, fuelLevel)
+
+    local ent = Entity(vehicle)
+    if ent and ent.state then
+        ent.state:set("fuel", fuelLevel, true)
+    end
+
+    if GetResourceState("cdn-fuel") == "started" then
+        pcall(function()
+            exports["cdn-fuel"]:SetFuel(vehicle, fuelLevel)
+        end)
+    end
+
+    if GetResourceState("LegacyFuel") == "started" then
+        pcall(function()
+            exports["LegacyFuel"]:SetFuel(vehicle, fuelLevel)
+        end)
+    end
+
+    if GetResourceState("ps-fuel") == "started" then
+        pcall(function()
+            exports["ps-fuel"]:SetFuel(vehicle, fuelLevel)
+        end)
+    end
+
+    if GetResourceState("ox_fuel") == "started" then
+        pcall(function()
+            exports["ox_fuel"]:setFuel(vehicle, fuelLevel)
+        end)
+    end
+end
+
+local function StartFuelMaintenance(vehicle)
+    if not Config.IgnoreFuelScripts or not vehicle or not DoesEntityExist(vehicle) then
+        return
+    end
+
+    local intervalMs = tonumber(Config.FuelMaintainIntervalMs) or 2000
+    if intervalMs < 500 then
+        intervalMs = 500
+    end
+
+    CreateThread(function()
+        while vehicle and DoesEntityExist(vehicle) and rideVehicle == vehicle and rideState ~= "idle" do
+            ApplyFuelOverride(vehicle)
+            Wait(intervalMs)
+        end
+    end)
+end
+
 function CancelRide()
     if rideState ~= "idle" then
         CleanupRide()
@@ -467,6 +525,8 @@ local function SpawnRideVehicle(vehicleData, pickupCoords, destinationCoords)
     SetVehicleDoorsLockedForPlayer(rideVehicle, PlayerId(), false)
     SetVehicleDoorsLockedForAllPlayers(rideVehicle, false)
     SetEntityAsMissionEntity(rideVehicle, false, false)
+    ApplyFuelOverride(rideVehicle)
+    StartFuelMaintenance(rideVehicle)
     
     -- Set vehicle extras (make it look like a taxi/rideshare)
     SetVehicleColours(rideVehicle, 0, 0) -- Black
