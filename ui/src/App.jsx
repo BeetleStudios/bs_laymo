@@ -143,7 +143,8 @@ const App = () => {
     const [tripProgress, setTripProgress] = useState(0);
     const [rating, setRating] = useState(0);
 
-    const { getSettings, onSettingsChange, setPopUp, sendNotification } = window;
+    const { getSettings, onSettingsChange } = window;
+    const setPopUp = window.setPopUp || window.components?.setPopUp?.bind(window.components);
     const t = useCallback((key, ...args) => {
         const template = locale?.[key] ?? defaultLocale[key] ?? key;
         if (args.length === 0) return template;
@@ -205,16 +206,21 @@ const App = () => {
         if (configData?.maxPartySize != null) setMaxPartySize(configData.maxPartySize);
         if (configData?.locale) setLocale({ ...defaultLocale, ...configData.locale });
 
-        if (statusData?.state && statusData.state !== 'idle') {
-            setRideState(statusData.state);
-            setRideInfo(statusData.ride);
-            setScreen('riding');
-        }
+        applyRideStatus(statusData);
     };
 
-    const handleMessage = useCallback((e) => {
-        const data = e.data;
-        
+    const normalizeRideInfo = useCallback((ride) => {
+        if (!ride) return null;
+        return {
+            vehicle: ride.vehicle?.name || ride.vehicle,
+            tier: ride.vehicle?.tier,
+            price: ride.price,
+            finalPrice: ride.price,
+            partySize: ride.partySize ?? 0
+        };
+    }, []);
+
+    const applyRideEvent = useCallback((data) => {
         switch (data?.type) {
             case 'rideUpdate':
                 setRideState(data.state);
@@ -251,6 +257,45 @@ const App = () => {
                 break;
         }
     }, []);
+
+    const applyRideStatus = useCallback((status) => {
+        if (!status?.state || status.state === 'idle') return;
+
+        setRideState(status.state);
+        if (status.ride) {
+            setRideInfo((prev) => prev || normalizeRideInfo(status.ride));
+        }
+        setScreen(status.state === 'completed' ? 'completed' : 'riding');
+
+        if (status.lastUpdate) {
+            applyRideEvent(status.lastUpdate);
+        }
+    }, [applyRideEvent, normalizeRideInfo]);
+
+    const handleMessage = useCallback((e) => {
+        applyRideEvent(e.data);
+    }, [applyRideEvent]);
+
+    useEffect(() => {
+        if (devMode || (screen !== 'riding' && rideState === 'idle')) return;
+
+        let cancelled = false;
+        const pollRideStatus = async () => {
+            try {
+                const status = await fetchNui('getRideStatus');
+                if (!cancelled) applyRideStatus(status);
+            } catch (error) {
+                // Polling is a fallback for phone systems without custom app messages.
+            }
+        };
+
+        pollRideStatus();
+        const interval = setInterval(pollRideStatus, 1000);
+        return () => {
+            cancelled = true;
+            clearInterval(interval);
+        };
+    }, [applyRideStatus, rideState, screen]);
 
     // Get current location
     const getCurrentLocation = async () => {

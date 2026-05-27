@@ -7,6 +7,8 @@ Config.Framework = 'qbx'
 Config.Locale = "EN"
 
 -- App Settings
+-- Phone system: 'lb' or 'codem'
+Config.PhoneSystem = "codem"
 Config.AppIdentifier = "laymo"
 Config.AppName = "Laymo"
 Config.AppDescription = "Autonomous ride service - Your personal self-driving taxi"

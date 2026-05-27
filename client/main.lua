@@ -52,12 +52,28 @@ local rideVehicle = nil
 local rideDriver = nil
 local driverBlip = nil
 local rideState = "idle" -- idle, waiting, arriving, pickup, riding, completed, cancelled
+local lastAppMessage = nil
 local sharedBoardingPrompt = nil
 local fallbackNodeOffsets = { {5, 0}, {-5, 0}, {0, 5}, {0, -5}, {8, 0}, {-8, 0}, {10, 0}, {0, 10} }
 local driverFirstNames = {"Alex", "Jordan", "Taylor", "Morgan", "Casey", "Riley", "Quinn", "Avery", "Skyler", "Jamie"}
 local driverLastInitials = {"A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "L", "M", "N", "P", "R", "S", "T", "W"}
 
-local function BuildAppDefinition()
+local function NormalizePhoneSystem()
+    local phone = (Config and Config.PhoneSystem) or "lb"
+    phone = tostring(phone):lower()
+
+    if phone == "lb" or phone == "lbphone" or phone == "lb-phone" then
+        return "lb-phone"
+    end
+
+    if phone == "codem" or phone == "codemphone" or phone == "codem-phone" or phone == "mphone" or phone == "mphone2" then
+        return "codem-phone"
+    end
+
+    return "lb-phone"
+end
+
+local function BuildLbPhoneAppDefinition()
     local resourceName = GetCurrentResourceName()
     local baseNuiUrl = "https://cfx-nui-" .. resourceName
 
@@ -79,29 +95,66 @@ local function BuildAppDefinition()
     }
 end
 
+local function BuildCodeMPhoneAppDefinition()
+    local resourceName = GetCurrentResourceName()
+
+    return {
+        identifier = Config.AppIdentifier,
+        name = Config.AppName,
+        description = Config.AppDescription,
+        defaultApp = true,
+        notification = true,
+        ui = resourceName .. "/ui/dist/index.html",
+        icon = "nui://" .. resourceName .. "/ui/dist/icon.png",
+        fixBlur = true
+    }
+end
+
+local function GetPhoneResourceName()
+    return NormalizePhoneSystem()
+end
+
 local function RegisterLaymoApp()
-    local added, errorMessage = exports["lb-phone"]:AddCustomApp(BuildAppDefinition())
-    if not added then
-        print("^1[Laymo] Could not add app: " .. tostring(errorMessage))
+    local phone = NormalizePhoneSystem()
+    local ok, added, errorMessage
+
+    if phone == "codem-phone" then
+        ok, added, errorMessage = pcall(function()
+            return exports["codem-phone"]:AddCustomApp(BuildCodeMPhoneAppDefinition())
+        end)
+    else
+        ok, added, errorMessage = pcall(function()
+            return exports["lb-phone"]:AddCustomApp(BuildLbPhoneAppDefinition())
+        end)
+    end
+
+    if not ok then
+        print(("^1[Laymo] Could not add app to %s: %s^7"):format(phone, tostring(added)))
         return false
     end
 
-    print("^2[Laymo] App registered successfully")
+    if not added then
+        print(("^1[Laymo] Could not add app to %s: %s^7"):format(phone, tostring(errorMessage)))
+        return false
+    end
+
+    print(("^2[Laymo] App registered successfully with %s^7"):format(phone))
     return true
 end
 
 -- Initialize
 CreateThread(function()
-    while GetResourceState("lb-phone") ~= "started" do
+    local phoneResource = GetPhoneResourceName()
+    while GetResourceState(phoneResource) ~= "started" do
         Wait(500)
     end
 
     RegisterLaymoApp()
 end)
 
--- Re-add app if lb-phone restarts
+-- Re-add app if the selected phone resource restarts.
 AddEventHandler("onResourceStart", function(resource)
-    if resource == "lb-phone" then
+    if resource == GetPhoneResourceName() then
         Wait(1000)
         RegisterLaymoApp()
     end
@@ -121,12 +174,19 @@ local function Notify(message, type)
             description = message,
             type = type or "info"
         })
-    else
+        return
+    end
+
+    if NormalizePhoneSystem() == "lb-phone" then
         exports["lb-phone"]:SendNotification({
             app = Config.AppIdentifier,
             title = L("app.name"),
             content = message
         })
+    elseif GetResourceState("codem-notification") == "started" then
+        TriggerEvent("codem-notification:Create", message, type or "info", L("app.name"), 5000)
+    else
+        print(("[Laymo] %s: %s"):format(type or "info", tostring(message)))
     end
 end
 
@@ -1114,14 +1174,26 @@ end
 
 -- Send message to app UI
 function SendAppMessage(data)
-    exports["lb-phone"]:SendCustomAppMessage(Config.AppIdentifier, data)
+    lastAppMessage = data
+
+    if NormalizePhoneSystem() == "lb-phone" then
+        exports["lb-phone"]:SendCustomAppMessage(Config.AppIdentifier, data)
+        return
+    end
+
+    -- CodeM Phone does not expose an LB-style custom app message export in the
+    -- documented API, so the UI also polls getRideStatus as a reliable fallback.
+    pcall(function()
+        SendNUIMessage(data)
+    end)
 end
 
 -- Get current ride state for app
 function GetRideState()
     return {
         state = rideState,
-        ride = currentRide
+        ride = currentRide,
+        lastUpdate = lastAppMessage
     }
 end
 

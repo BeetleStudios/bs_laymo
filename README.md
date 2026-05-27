@@ -1,6 +1,6 @@
 # Laymo - Autonomous Ride Service for FiveM
 
-A Waymo/Uber-style autonomous ride service app for lb-phone, designed for QBX/QB/ESX/OX framework servers.
+A Waymo/Uber-style autonomous ride service app for lb-phone or CodeM Phone, designed for QBX/QB/ESX/OX framework servers.
 By Seamus McMasters - Beetle Studios
 
 ## Features
@@ -16,7 +16,7 @@ By Seamus McMasters - Beetle Studios
 ## Dependencies
 
 - [qbx_core](https://github.com/Qbox-project/qbx_core)
-- [lb-phone](https://lbscripts.com/)
+- [lb-phone](https://lbscripts.com/) or [CodeM Phone](https://codem.gitbook.io/codem-documentation/m-series/essentials/mphone-2.0/custom-app)
 - [ox_lib](https://github.com/overextended/ox_lib)
 - [oxmysql](https://github.com/overextended/oxmysql) (optional, for ride history)
 
@@ -36,14 +36,18 @@ Convar reference: Qbox docs - Convars.
 If you received a **pre-built release** (zip from the developer):
 
 1. **Extract** the zip into your server's `resources` folder so you have `resources/bs_laymo/` (with `ui/dist` inside).
-2. **Add to `server.cfg`:**
+2. **Choose your phone in `config.lua`:**
+   ```lua
+   Config.PhoneSystem = "lb" -- or "codem"
+   ```
+3. **Add to `server.cfg`:**
    ```cfg
    ensure ox_lib
    ensure qbx_core
-   ensure lb-phone
+   ensure lb-phone # or ensure codem-phone
    ensure bs_laymo
    ```
-3. Start or restart your server.
+4. Start or restart your server.
 
 No Node.js or build step needed.
 
@@ -62,6 +66,7 @@ Then zip the entire `bs_laymo` folder (including `ui/dist`) and share it. End us
 
 ## Configure (Optional)
 Edit `config.lua` to customize:
+- Phone system (`Config.PhoneSystem = "lb"` or `"codem"`)
 - Pricing (base fare, per-mile rate, minimum fare)
 - Vehicle options and tiers
 - Driver models
@@ -189,7 +194,7 @@ Config.Debug = true
 - Verify player isn't already in a vehicle
 
 ### App Not Showing
-- Verify lb-phone is started before this resource
+- Verify your configured phone resource (`lb-phone` or `codem-phone`) is started before this resource
 - Check for errors in F8 console
 - Ensure `ui/dist` exists (if you built from source, run `build.bat` or `npm run build` in `ui`; if you use a pre-built release, re-download so the zip includes `ui/dist`)
 
